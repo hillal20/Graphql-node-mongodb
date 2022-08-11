@@ -1,26 +1,36 @@
-import React, { Component } from "react";
-import { graphql } from "react-apollo";
-import { getBooksQuery } from "./query.js";
+import React, { Component, useState } from "react";
+import { useQuery } from "@apollo/client";
+import { getBooksQuery, getAllUsers } from "./query.js";
 import BookDetail from "./bookDetail.js";
 
-class BookList extends Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      id: ""
-    };
-  }
-  displayBooks() {
-    let data = this.props.data;
-    if (data.loading) {
+const BookList = (props) => {
+  const {
+    error: error1,
+    loading: loading1,
+    data: data1,
+  } = useQuery(getAllUsers);
+  const {
+    error: error2,
+    loading: loading2,
+    data: data2,
+  } = useQuery(getBooksQuery);
+  const [state, setState] = useState({
+    id: "",
+  });
+  console.log("error ===> ", error1);
+  console.log("data1 ===> ", data1);
+  console.log("error ===> ", error2);
+  console.log("data1 ===> ", data2);
+  const displayBooks = () => {
+    if (loading2) {
       return <div>loading books</div>;
     } else {
-      return data.BOOKS.map(book => {
+      return data2.BOOKS.map((book) => {
         return (
           <li
             key={book.id}
-            onClick={event => {
-              this.setState({ id: book.id });
+            onClick={(event) => {
+              setState((pre) => ({ ...pre, id: book.id }));
               alert("hello");
             }}
           >
@@ -29,16 +39,15 @@ class BookList extends Component {
         );
       });
     }
-  }
+  };
 
-  render() {
-    return (
-      <div className="App">
-        <ul> {this.displayBooks()}</ul>
-        <BookDetail bookId={this.state.id} />
-      </div>
-    );
-  }
-}
+  return (
+    <div className="App">
+      <div>books</div>
+      <ul> {displayBooks()}</ul>
+      {/* <BookDetail bookId={state.id} /> */}
+    </div>
+  );
+};
 
-export default graphql(getBooksQuery)(BookList);
+export default BookList;

@@ -1,23 +1,32 @@
-import React, { Component } from "react";
-import { graphql, compose } from "react-apollo";
+import React, { useState, useEffect } from "react";
+import { useQuery, useMutation } from "@apollo/client";
+
 import { getAuthorQuery, addBookQuery, getBooksQuery } from "./query.js";
 
-class AddBook extends Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      bookName: "",
-      bookGenre: "",
-      authorId: ""
-    };
-  }
+const AddBook = (props) => {
+  const {
+    error: getAuthorError,
+    loading: getAuthorLoading,
+    data: getAuthorData,
+  } = useQuery(getAuthorQuery);
 
-  displayAuthors() {
-    let data = this.props.getAuthorQuery;
-    if (data.loading) {
+  const [state, setState] = useState({
+    bookName: "",
+    bookGenre: "",
+    authorId: "",
+  });
+
+  const [addBook, { error: addBookError }] = useMutation(addBookQuery);
+
+  useEffect(() => {
+    console.log("data ==> ", getAuthorData);
+  }, [getAuthorData]);
+
+  const displayAuthors = () => {
+    if (getAuthorLoading) {
       return <option>loading books</option>;
     } else {
-      return data.AUTHORS.map(author => {
+      return getAuthorData.AUTHORS.map((author) => {
         return (
           <option key={author.id} value={author.id}>
             {author.name}
@@ -25,53 +34,57 @@ class AddBook extends Component {
         );
       });
     }
-  }
-
-  eventHandler = event => {
-    this.setState({ [event.target.name]: event.target.value });
   };
-  submit = () => {
-    this.props.addBookQueryMutation({
+
+  const eventHandler = (event) => {
+    const { name, value } = event.target;
+
+    setState((pre) => ({
+      ...pre,
+      [name]: value,
+    }));
+  };
+  const submit = () => {
+    addBook({
       variables: {
-        name: this.state.bookName,
-        genre: this.state.bookGenre,
-        author_id: this.state.authorId
+        name: state.bookName,
+        genre: state.bookGenre,
+        // author_id: state.authorId,
+        author_id: 3,
       },
-      refetchQueries: [{ query: getBooksQuery }]
+      refetchQueries: [{ query: getBooksQuery }],
     });
+    if (addBookError) {
+      console.log("addBookError ==>", addBookError);
+    }
   };
 
-  render() {
-    console.log(this.props);
-    return (
-      <div>
-        add book
-        <input
-          type="text"
-          name="bookName"
-          value={this.state.bookName}
-          onChange={this.eventHandler}
-        />
-        <input
-          type="text"
-          value={this.state.bookGenre}
-          name="bookGenre"
-          onChange={this.eventHandler}
-        />
-        <select
-          onChange={event => {
-            this.setState({ authorId: event.target.value });
-          }}
-        >
-          <option>select author</option>
-          {this.displayAuthors()}
-        </select>
-        <button onClick={this.submit}>submit</button>
-      </div>
-    );
-  }
-}
-export default compose(
-  graphql(getAuthorQuery, { name: "getAuthorQuery" }),
-  graphql(addBookQuery, { name: "addBookQueryMutation" })
-)(AddBook);
+  return (
+    <div>
+      add book
+      <input
+        type="text"
+        name="bookName"
+        value={state.bookName}
+        onChange={eventHandler}
+      />
+      book genre
+      <input
+        type="text"
+        value={state.bookGenre}
+        name="bookGenre"
+        onChange={eventHandler}
+      />
+      <select
+        onChange={(event) => {
+          setState((pre) => ({ ...pre, authorId: event.target.value }));
+        }}
+      >
+        <option>select author</option>
+        {displayAuthors()}
+      </select>
+      <button onClick={submit}>submit</button>
+    </div>
+  );
+};
+export default AddBook;
